@@ -255,21 +255,11 @@ class BaseGraph implements Graph {
         initialized = true;
     }
 
-final Logger logger = LoggerFactory.getLogger(getClass());
     /**
      * Initializes the node area with the empty edge value and default additional value.
      */
     void initNodeRefs(long oldCapacity, long newCapacity) {
-logger.warn("ORS-EXTRA initNodeRefs start oldCapacity:"+oldCapacity+" N_EDGE_REF: "+N_EDGE_REF+" newCapacity: "+newCapacity);
-System.out.println("ORS-EXTRA initNodeRefs start oldCapacity: "+oldCapacity+" N_EDGE_REF: "+N_EDGE_REF+" newCapacity: "+newCapacity);
-int count = 0;
         for (long pointer = oldCapacity + N_EDGE_REF; pointer < newCapacity; pointer += nodeEntryBytes) {
-if(count == 0 || (pointer+nodeEntryBytes) >= newCapacity) {
-    logger.warn("ORS-EXTRA [" + count + "] pointer: " + pointer);
-    System.out.println("ORS-EXTRA [" + count + "] pointer: " + pointer);
-}
-count++;
-
             nodes.setInt(pointer, EdgeIterator.NO_EDGE);
         }
         if (extStorage.isRequireNodeField()) {
@@ -628,9 +618,6 @@ count++;
             itemsToMove++;
         }
 
-logger.warn("ORS-EXTRA itemsToMove: "+itemsToMove+" removeNodes.length: "+((GHBitSetImpl) removedNodes).length()+" getCardinality: "+((GHBitSetImpl) removedNodes).getCardinality());
-System.out.println("ORS-EXTRA itemsToMove: "+itemsToMove+" removeNodes.length: "+((GHBitSetImpl) removedNodes).length()+" getCardinality: "+((GHBitSetImpl) removedNodes).getCardinality());
-
         EdgeIterable adjNodesToDelIter = (EdgeIterable) createEdgeExplorer();
         // now similar process to disconnectEdges but only for specific nodes
         // all deleted nodes could be connected to existing. remove the connections
@@ -672,9 +659,6 @@ System.out.println("ORS-EXTRA itemsToMove: "+itemsToMove+" removeNodes.length: "
                 toMoveSet.add(nodeId);
             }
         }
-
-logger.warn("ORS-EXTRA toMoveSet.length: "+((GHBitSetImpl) toMoveSet).length()+" getCardinality: "+((GHBitSetImpl) toMoveSet).getCardinality());
-System.out.println("ORS-EXTRA toMoveSet.length: "+((GHBitSetImpl) toMoveSet).length()+" getCardinality: "+((GHBitSetImpl) toMoveSet).getCardinality());
 
         // move nodes into deleted nodes
         for (int i = 0; i < itemsToMove; i++) {
@@ -718,14 +702,15 @@ System.out.println("ORS-EXTRA toMoveSet.length: "+((GHBitSetImpl) toMoveSet).len
                 setWayGeometry_(fetchWayGeometry_(edgePointer, true, 0, -1, -1), edgePointer, false);
         }
 
-logger.warn("ORS-EXTRA: nodeCount: "+nodeCount+ " / removeNodeCount: "+removeNodeCount+" / nodeEntryBytes: "+nodeEntryBytes);
-System.out.println("ORS-EXTRA: nodeCount: "+nodeCount+ " / removeNodeCount: "+removeNodeCount+" / nodeEntryBytes: "+nodeEntryBytes);
-
-        // clear N_EDGE_REF
-        initNodeRefs((nodeCount - removeNodeCount) * nodeEntryBytes, nodeCount * nodeEntryBytes);
-
         if (removeNodeCount >= nodeCount)
             throw new IllegalStateException("graph is empty after in-place removal but was " + removeNodeCount);
+
+        // clear N_EDGE_REF
+        // ORS MOD START
+        // YOU BLOODY SON OF A BITCH - Thanks Peter for NOTHING...!
+        // initNodeRefs((nodeCount - removeNodeCount) * nodeEntryBytes, nodeCount * nodeEntryBytes);
+        initNodeRefs(((long) nodeCount - removeNodeCount) * nodeEntryBytes, (long) nodeCount * nodeEntryBytes);
+        // ORS MOD END
 
         // we do not remove the invalid edges => edgeCount stays the same!
         nodeCount -= removeNodeCount;
